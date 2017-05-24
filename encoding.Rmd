@@ -1,0 +1,332 @@
+---
+title: "Encoding character strings in R"
+author: "Maurício Collaça"
+date: "2017/05/23"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = "")
+```
+
+## Introduction
+This document describes how to encode character strings in R by demonstrating `Encoding()`, `enc2native()`, `enc2utf8()`, `iconv()` and `iconvlist()`.
+
+Finally, its coded the function `safe.iconvlist()` that returns safe encodings from `iconvlist()`.
+
+## Session information
+```{r}
+sessionInfo()
+```
+## Platform
+```{r}
+Sys.info()[1:5]
+```
+## Clarification about getOption("encoding")
+This option is related to encoding connections (Files, URLs, etc) and not character vector encodings.  Its factory fresh setting is `"native.enc"` if it was not previosly changed with `options(enconding)` or in the initialization files `Rprofile.site` and `.Rprofile`.
+```{r}
+getOption("encoding")
+```
+## Current Locale
+```{r}
+Sys.getlocale("LC_ALL")
+```
+From `help(locales)`: _For category = "LC_ALL" the details of the string are system-specific: it might be a single locale name or a set of locale names separated by "/" (Solaris, macOS) or ";" (Windows, Linux). For portability, it is best to query categories individually: it is not necessarily the case that the result of foo <- Sys.getlocale() can be used in Sys.setlocale("LC_ALL", locale = foo)._
+
+Saving locale categories configuration individually.
+```{r}
+localeCategories <- c("LC_COLLATE","LC_CTYPE","LC_MONETARY","LC_NUMERIC","LC_TIME")
+locales <- setNames(sapply(localeCategories, Sys.getlocale), localeCategories)
+```
+Restoring saved locale categories configuration.
+```{r}
+locales
+sapply(names(locales), function(x) {Sys.setlocale(x, locales[[x]])})
+```
+## Warning about Sys.setlocale("LC_CTYPE")
+From `help(locales)`: _Attempts to change the character set by `Sys.setlocale("LC_CTYPE")` that implies a different character set during a session may not work and are likely to lead to some confusion because it may not affect the native encoding._
+## Localization information
+The function `l10n_info()` reports on localization returning a list with three logical and one integer components:
+
+`MBCS`: if a multi-byte character set in use?  
+`UTF-8`: Is this a UTF-8 locale?  
+`Latin-1`: Is this a Latin-1 locale?  
+`codepage`: the Windows codepage corresponding to the locale R is using (and not necessarily that Windows is using).
+```{r}
+l10n_info()
+```
+## Native encoding indication
+The native encoding indication is reported by `l10n_info()` in one of the logical elements ``r names(l10n_info()[2])`` and ``r names(l10n_info()[3])`` which is `TRUE`.
+
+Native encoding indication for the current platform:
+```{r}
+l10n_info()[2:3][(l10n_info()[2:3])==TRUE]
+```
+## Current native encoding name
+Character strings in R can be declared to be encoded in `"latin1"` or `"UTF-8"` or as `"bytes"`.
+A programatic approach to deal with the current native encoding name in R functions is based on how character strings can be declared and the information reported by `l10n_info`.
+```{r}
+(native <- ifelse(l10n_info()[[2]], "UTF-8", ifelse(l10n_info()[[3]], "latin1", "unknown")))
+```
+## Current foreign encoding name
+A programatic approach to deal with a foreign encoding name in R functions is based on how character strings can be declared and the information reported by `l10n_info`.
+```{r}
+(native <- ifelse(l10n_info()[[2]], "UTF-8", ifelse(l10n_info()[[3]], "latin1", "unknown")))
+(foreign <- switch(native, "latin1"="UTF-8", "UTF-8"="latin1", "UTF-8"))
+```
+## Base R functions to declare or convert encodings
+`Encoding()` returns the encoding mark as `"latin1"`, `"UTF-8"`, `"bytes"` or `"unknown"`.  
+`Encoding()<-` sets the encoding mark without translating the character string.  
+`enc2native()` and `enc2utf8()` convert elements of character vectors to the native encoding or UTF-8 respectively, taking any marked encoding into account.  
+`iconv()` uses system facilities to convert a character vector between encoding. The names of encodings and which ones are available are platform-dependent. All R platforms support `""` (for the encoding of the current locale), `"latin1"` and `"UTF-8"`.  Any encoding bits on elements of x are ignored: they will always be translated as if from encoding `from` even if declared otherwise.
+
+There are other ways for character strings to acquire a declared encodings.  Some of them have an `encoding` argument that is used to declare encodings.  Most character manipulation functions will set the encoding on output strings if it was declared on the corresponding input.  These have changed as R has evolved and are mentioned in `help(Encoding)`.  There are also external packages but are out of the scope of this document.
+### Custom function to display details about a string
+```{r}
+details <- function(x) {
+    details <-
+        list(x=x,encoding=Encoding(x),bytes=nchar(x,"b"),chars=nchar(x,"c"),
+             width=nchar(x,"w"),raw=paste(charToRaw(x),collapse=":"))
+    print(t(as.matrix(details)))
+}
+```
+## Character vector encoding
+Character strings in R can be declared to be encoded in `"latin1"` or `"UTF-8"` or as `"bytes"`.
+
+An encoded character string contains characters beyond the basic ASCII characters. For instance, the string `"Maurício"` contains an _**i-acute**_.
+
+When assigning an string to a name, it is marked with the native encoding indicated in `l10n_info()`, except for ASCII strings which are allways marked as `"unknown"`.
+```{r}
+x <- "Maurício"
+c(x, Encoding(x))
+```
+### ASCII strings
+ASCII strings will never be marked with a declared encoding, since their representation is the same in all supported encodings. 
+```{r}
+x <- "ABC"
+Encoding(c(x, enc2native(x), enc2utf8(x)))
+```
+### Escaped strings
+The string `"Maurício"` is escaped `"Maur\xEDcio"` if intended to be in `"latin1"` encoding and `"Maur\xC3\xADcio"` if intended to be in `"UTF-8"` encoding, therefore, they should be marked accordingly with `Encoding()<-` to let them portable between different encoding locales.
+
+If your native encoding is `"latin1"`
+```{r}
+x <- "Maur\xC3\xADcio"
+Encoding(x) <- "UTF-8"
+details(x)
+```
+If your native encoding is `"UTF-8"`.
+```{r}
+x <- "Maur\xEDcio"
+Encoding(x) <- "latin1"
+details(x)
+```
+### Converting encoded strings
+Base R provides `enc2native()` and `enc2utf8()` but doesn't provide an `"enc2latin1()"`.  Therefore, one can use `iconv()` but must use the `from` argument with careful because it must match the correct encoding mark of the input string, doesn't accept `"unknown"` and be aware that its result is platform dependent.  More details in `help(iconv)`.
+
+From `"latin1"` to `"UTF-8"`.
+```{r}
+x <- "Maur\xEDcio"
+Encoding(x) <- "latin1"
+details(x)
+x <- enc2utf8(x)
+details(x)
+```
+
+From `"UTF-8"` to `"latin1"`.
+```{r}
+x <- "Maur\xC3\xADcio"
+Encoding(x) <- "UTF-8"
+details(x)
+x <- iconv(x, from=Encoding(x), to="latin1", sub="byte")
+details(x)
+```
+## Internationalization Convertion Test
+From `help(iconvlist)`: On most platforms iconvlist provides an alphabetical list of the supported encodings. On others, the information is on the man page for iconv(5) or elsewhere in the man pages (but beware that the system command iconv may not support the same set of encodings as the C functions R calls). Unfortunately, the names are rarely supported across all platforms.  Value for iconvlist(), a character vector (typically of a few hundred elements) of known encoding names.
+
+Number of suposed supported encodings.
+```{r}
+(encodings <- length(iconvlist()))
+```
+Number of unique supported encodings may be differ.
+```{r}
+length(unique(iconvlist()))
+```
+### Test string "Maurício" as "latin1"
+```{r}
+x <- "Maur\xEDcio"
+Encoding(x) <- "latin1"
+details(x)
+```
+Trying to convert the string in `r encodings` supposedly supported target encodings.
+```{r}
+results <- 
+    sapply(iconvlist(),
+           function(to)
+               try(iconv(x, from = Encoding(x), to = to), silent = TRUE))
+```
+### Target locales that produce R runtime errors
+```{r}
+sum(isErrors <- grepl("^Error in iconv", results))
+```
+```{r}
+errors <- results[isErrors]
+names(errors)
+```
+Runtime error messages
+```{r}
+errors <-
+    gsub("Error in iconv\\(x, from = Encoding\\(x), to = to) : \n  |\n",
+         "", errors)
+cat(errors, fill = TRUE, labels=paste0(names(errors), ": "))
+```
+### Target locales that cannot convert all bytes
+It is due to character strings that cannot be converted because of any of their bytes that cannot be represented in the target encoding, producing `NA` results.
+```{r}
+sum(isNAs <- is.na(results))
+```
+```{r}
+names(results[isNAs])
+```
+Here it is used the `sub = "byte"` argument to replace any non-convertible byte in the input with its hex code indicated with `"<xx>"` in order to inspect which bytes in the input are non-convertible.
+```{r}
+results2 <- 
+    sapply(iconvlist(),
+           function(to)
+               try(iconv(x, from = Encoding(x), to = to, sub = "byte"),
+                   silent = TRUE))
+```
+```{r}
+nonconvertibles <- results2[isNAs]
+```
+Contingency table of non-convertible strings.
+```{r}
+table(nonconvertibles)
+```
+Target locales grouped by non-convertible strings
+```{r}
+split(names(nonconvertibles), nonconvertibles)
+```
+### Target locales that encoded "unknown"
+```{r}
+sum(isUnknown <- !isNAs & !isErrors & Encoding(results) == "unknown")
+```
+```{r}
+names(unknown <- results[isUnknown])
+```
+Contingency table of results encoded "unknown"
+```{r}
+table(unknown)
+```
+Target locales grouped by results encoded "unknown"
+```{r}
+split(names(unknown), unknown)
+```
+### Target locales that encoded as native "`r native`"
+```{r}
+sum(isUnchanged <- !isNAs & !isErrors & Encoding(results) == native)
+```
+```{r}
+names(unchanged <- results[isUnchanged])
+```
+Contingency table of results encoded as native "`r native`"
+```{r}
+table(unchanged)
+```
+Target locales grouped by results encoded as native "`r native`"
+```{r}
+split(names(unchanged), unchanged)
+```
+### Target locales that produced new encodings different from "unknown"
+```{r}
+sum(isRemarked <- !isNAs & !isErrors & Encoding(results) != native
+    & Encoding(results) != "unknown")
+```
+```{r}
+names(remarked <- results[isRemarked])
+```
+Contingency table of results with new encoding
+```{r}
+table(remarked)
+```
+Target locales grouped by new encodings different from "unknown"
+```{r}
+split(names(remarked), remarked)
+```
+### Function to list real supported encodings 
+As one can see through the tests above, `iconvlist()` returns an unsafe list of encodings that may even `stop()` your R code.  All these tests made possible to develop a wrapper function to list the really supported encodings from a source encoding (defaults to `from=Encoding(x)`) to all suposedly supported encodings for the current platform by avoiding runtime errors and non-convertible strings.
+```{r}
+safe.iconvlist <- function(x, from = Encoding(x)) {
+    stopifnot(is.character(x))
+    from <- switch(from, "unknown" = "", from)
+    results <- 
+        sapply(iconvlist(), 
+               function(to) try(iconv(x, from = from, to = to), silent = TRUE))
+    results <- results[(!is.na(results) & !grepl("^Error in iconv", results))]
+    return(names(results))
+}
+```
+#### safe.iconvlist() test for latin1 characters strings
+The test strings are defined by the ISO-8859-1 codepoints: https://en.wikipedia.org/wiki/ISO/IEC_8859-1
+```{r}
+ISO88591 <- list(
+    alphabetic = c(65:90,97:122),
+    numeric = c(48:57),
+    punctuation = c(32:47, 58:64, 91:96, 123:126, 178:179, 185),
+    extended.punctuation = c(160:169, 171:177, 180, 182:184, 187:191, 215, 247),
+    international = c(170, 181, 186, 192:214, 216:246, 248:255),
+    undefined = c(0:31, 127:159))
+```
+Number of ISO-8859-1 codepoints
+```{r}
+sapply(ISO88591, length)
+sum(sapply(ISO88591, length))
+```
+Character strings created from raw vectors are marked "unknown"
+```{r}
+ISO88591 <- lapply(ISO88591, function(x)
+    paste0(rawToChar(as.raw(x), multiple = TRUE), collapse = ""))
+sapply(ISO88591, function(x) Encoding(x))
+```
+Therefore they should be marked as "latin1" wherever possible for the test
+```{r}
+ISO88591 <- lapply(ISO88591, function(x) { Encoding(x) <- "latin1"; x })
+sapply(ISO88591, function(x) Encoding(x))
+```
+Number of real supported encodings for the test strings.
+```{r}
+sapply(ISO88591, function(x) length(safe.iconvlist(x)))
+```
+A merged test string shows real supported encondings for the full ISO-88591 character set.
+```{r}
+safe.iconvlist(paste0(ISO88591, collapse=""))
+```
+#### safe.iconvlist() test for UTF-8 character strings
+The test strings are based on Basic Multilingual Plane (BMP) which contains characters for almost all modern languages, and a large number of symbols. Most of the assigned code points in the BMP are used to encode Chinese, Japanese, and Korean (CJK) characters. https://en.wikipedia.org/wiki/UTF-8.  
+```{r}
+UTF8 <- list(
+    onebyte.BMP.ASCII = c(0x0000:0x007F),
+    twobytes.BMP = c(0x0080:0x07FF), 
+    threebytes.BMP = c(0x0800:0x085F, 0x08A0:0x1C8F, 0x1CC0:0x2FDF,
+                       0x2FF0:0xD7FF, 0xF900:0xFFFF))
+```
+There is large number of assigned UTF-8 codepoints:
+```{r}
+sapply(UTF8, length)
+sum(sapply(UTF8, length))
+```
+The only test string encoded "unknown" is the ASCII string as expected.
+```{r}
+UTF8 <- lapply(UTF8, intToUtf8)
+sapply(UTF8, function(x) Encoding(x))
+```
+Number of real supported encodings for the test strings.
+```{r}
+sapply(UTF8, function(x) length(safe.iconvlist(x)))
+```
+A merged test string shows real supported encondings for the full UTF-8 character set.
+```{r}
+safe.iconvlist(paste0(UTF8, collapse=""))
+```
