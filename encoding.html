@@ -126,7 +126,7 @@ $(document).ready(function () {
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
 <p>This document describes how to encode character strings in R by demonstrating <code>Encoding()</code>, <code>enc2native()</code>, <code>enc2utf8()</code>, <code>iconv()</code> and <code>iconvlist()</code>.</p>
-<p>Finally, it is tested the function <a href="safe.iconvlist.R"><code>safe.iconvlist()</code></a> which returns safe encodings from <code>iconvlist()</code>.</p>
+<p>Finally, it is coded and tested the custom function <a href="https://github.com/mauriciocramos/encoding/blob/master/safe.iconvlist.R"><code>safe.iconvlist()</code></a> that aims to list sucessfuly tested supported encodings from a source encoding to all suposedly supported encodings for the current platform by avoiding runtime errors and non-convertible strings.</p>
 </div>
 <div id="session-information" class="section level2">
 <h2>Session information</h2>
@@ -712,15 +712,18 @@ Maurício
 <pre><code>$Maurício
 [1] &quot;UTF-8&quot; &quot;UTF8&quot; </code></pre>
 </div>
-<div id="function-to-list-real-supported-encodings" class="section level3">
-<h3>Function to list real supported encodings</h3>
-<p>As one can see through the tests above, <code>iconvlist()</code> returns an unsafe list of encodings that may even <code>stop()</code> your R code. All these tests made possible to develop a wrapper function to list the really supported encodings from a source encoding (defaults to <code>from=Encoding(x)</code>) to all suposedly supported encodings for the current platform by avoiding runtime errors and non-convertible strings.</p>
-<pre class="r"><code>source(&quot;safe.iconvlist.R&quot;,echo = TRUE)</code></pre>
-<pre><code>
-&gt; safe.iconvlist &lt;- function(x, from = Encoding(x)) {
-+     stopifnot(is.character(x))
-+     from &lt;- switch(from, unknown = &quot;&quot;, from)
-+     results &lt;- .... [TRUNCATED] </code></pre>
+<div id="safe.iconvlist" class="section level3">
+<h3>safe.iconvlist()</h3>
+<p>As one can see through the tests above, <code>iconvlist()</code> returns an unsafe list of encodings that may even <code>stop()</code> your R code. All these tests made possible to develop the custom function <code>safe.iconvlist</code> that aims to list sucessfuly tested supported encodings from a source encoding (defaults to <code>from=Encoding(x)</code>) to all suposedly supported encodings for the current platform by avoiding runtime errors and non-convertible strings.</p>
+<pre class="r"><code>safe.iconvlist &lt;- function(x, from = Encoding(x)) {
+    stopifnot(is.character(x))
+    from &lt;- switch(from, &quot;unknown&quot; = &quot;&quot;, from)
+    results &lt;- 
+        sapply(iconvlist(), 
+               function(to) try(iconv(x, from = from, to = to), silent = TRUE))
+    results &lt;- results[(!is.na(results) &amp; !grepl(&quot;^Error in iconv&quot;, results))]
+    return(names(results))
+}</code></pre>
 <div id="safe.iconvlist-test-for-latin1-characters-strings" class="section level4">
 <h4>safe.iconvlist() test for latin1 characters strings</h4>
 <p>The test strings are defined by the ISO-8859-1 codepoints: <a href="https://en.wikipedia.org/wiki/ISO/IEC_8859-1" class="uri">https://en.wikipedia.org/wiki/ISO/IEC_8859-1</a></p>

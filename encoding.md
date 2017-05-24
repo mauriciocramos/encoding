@@ -5,7 +5,7 @@ Maurício Collaça
 ## Introduction
 This document describes how to encode character strings in R by demonstrating `Encoding()`, `enc2native()`, `enc2utf8()`, `iconv()` and `iconvlist()`.
 
-Finally, it is tested the function [`safe.iconvlist()`](safe.iconvlist.R) which returns safe encodings from `iconvlist()`.
+Finally, it is coded and tested the custom function [`safe.iconvlist()`](https://github.com/mauriciocramos/encoding/blob/master/safe.iconvlist.R) that aims to list sucessfuly tested supported encodings from a source encoding to all suposedly supported encodings for the current platform by avoiding runtime errors and non-convertible strings.
 
 ## Session information
 
@@ -827,19 +827,19 @@ split(names(remarked), remarked)
 $Maurício
 [1] "UTF-8" "UTF8" 
 ```
-### Function to list real supported encodings 
-As one can see through the tests above, `iconvlist()` returns an unsafe list of encodings that may even `stop()` your R code.  All these tests made possible to develop a wrapper function to list the really supported encodings from a source encoding (defaults to `from=Encoding(x)`) to all suposedly supported encodings for the current platform by avoiding runtime errors and non-convertible strings.
+### safe.iconvlist()
+As one can see through the tests above, `iconvlist()` returns an unsafe list of encodings that may even `stop()` your R code.  All these tests made possible to develop the custom function `safe.iconvlist` that aims to list sucessfuly tested supported encodings from a source encoding (defaults to `from=Encoding(x)`) to all suposedly supported encodings for the current platform by avoiding runtime errors and non-convertible strings.
 
 ```r
-source("safe.iconvlist.R",echo = TRUE)
-```
-
-```
-
-> safe.iconvlist <- function(x, from = Encoding(x)) {
-+     stopifnot(is.character(x))
-+     from <- switch(from, unknown = "", from)
-+     results <- .... [TRUNCATED] 
+safe.iconvlist <- function(x, from = Encoding(x)) {
+    stopifnot(is.character(x))
+    from <- switch(from, "unknown" = "", from)
+    results <- 
+        sapply(iconvlist(), 
+               function(to) try(iconv(x, from = from, to = to), silent = TRUE))
+    results <- results[(!is.na(results) & !grepl("^Error in iconv", results))]
+    return(names(results))
+}
 ```
 #### safe.iconvlist() test for latin1 characters strings
 The test strings are defined by the ISO-8859-1 codepoints: https://en.wikipedia.org/wiki/ISO/IEC_8859-1
