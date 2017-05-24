@@ -5,7 +5,7 @@ Maurício Collaça
 ## Introduction
 This document describes how to encode character strings in R by demonstrating `Encoding()`, `enc2native()`, `enc2utf8()`, `iconv()` and `iconvlist()`.
 
-Finally, it is coded and tested the custom function [`safe.iconvlist()`](https://github.com/mauriciocramos/encoding/blob/master/safe.iconvlist.R) that aims to list sucessfuly tested supported encodings from a source encoding to all suposedly supported encodings for the current platform by avoiding runtime errors and non-convertible strings.
+Finally, it is coded and tested the custom function [`safe.iconvlist()`](https://github.com/mauriciocramos/encoding/blob/master/safe.iconvlist.R) that aims to list successfully tested supported encodings from a source encoding to all supposedly supported encodings for the current platform by avoiding runtime errors and non-convertible strings.
 
 ## Session information
 
@@ -45,7 +45,7 @@ Sys.info()[1:5]
     "Windows"      "10 x64" "build 14393"     "DESKTOP"      "x86-64" 
 ```
 ## Clarification about getOption("encoding")
-This option is related to encoding connections (Files, URLs, etc) and not character vector encodings.  Its factory fresh setting is `"native.enc"` if it was not previosly changed with `options(enconding)` or in the initialization files `Rprofile.site` and `.Rprofile`.
+This option is related to encoding connections (Files, URLs, etc) and not character vector encodings.  Its factory fresh setting is `"native.enc"` if it was not previously changed with `options(enconding)` or in the initialization files `Rprofile.site` and `.Rprofile`.
 
 ```r
 getOption("encoding")
@@ -96,6 +96,7 @@ sapply(names(locales), function(x) {Sys.setlocale(x, locales[[x]])})
 ```
 ## Warning about Sys.setlocale("LC_CTYPE")
 From `help(locales)`: _Attempts to change the character set by `Sys.setlocale("LC_CTYPE")` that implies a different character set during a session may not work and are likely to lead to some confusion because it may not affect the native encoding._
+
 ## Localization information
 The function `l10n_info()` reports on localization returning a list with three logical and one integer components:
 
@@ -136,7 +137,7 @@ $`Latin-1`
 ```
 ## Current native encoding name
 Character strings in R can be declared to be encoded in `"latin1"` or `"UTF-8"` or as `"bytes"`.
-A programatic approach to deal with the current native encoding name in R functions is based on how character strings can be declared and the information reported by `l10n_info`.
+A programmatic approach to deal with the current native encoding name in R functions is based on how character strings can be declared and the information reported by `l10n_info`.
 
 ```r
 (native <- ifelse(l10n_info()[[2]], "UTF-8", ifelse(l10n_info()[[3]], "latin1", "unknown")))
@@ -146,7 +147,7 @@ A programatic approach to deal with the current native encoding name in R functi
 [1] "latin1"
 ```
 ## Current foreign encoding name
-A programatic approach to deal with a foreign encoding name in R functions is based on how character strings can be declared and the information reported by `l10n_info`.
+A programmatic approach to deal with a foreign encoding name in R functions is based on how character strings can be declared and the information reported by `l10n_info`.
 
 ```r
 (native <- ifelse(l10n_info()[[2]], "UTF-8", ifelse(l10n_info()[[3]], "latin1", "unknown")))
@@ -170,7 +171,8 @@ A programatic approach to deal with a foreign encoding name in R functions is ba
 `iconv()` uses system facilities to convert a character vector between encoding. The names of encodings and which ones are available are platform-dependent. All R platforms support `""` (for the encoding of the current locale), `"latin1"` and `"UTF-8"`.  Any encoding bits on elements of x are ignored: they will always be translated as if from encoding `from` even if declared otherwise.
 
 There are other ways for character strings to acquire a declared encodings.  Some of them have an `encoding` argument that is used to declare encodings.  Most character manipulation functions will set the encoding on output strings if it was declared on the corresponding input.  These have changed as R has evolved and are mentioned in `help(Encoding)`.  There are also external packages but are out of the scope of this document.
-### Custom function to display details about a string
+
+## Custom function to display details about a string
 
 ```r
 details <- function(x) {
@@ -185,7 +187,7 @@ Character strings in R can be declared to be encoded in `"latin1"` or `"UTF-8"` 
 
 An encoded character string contains characters beyond the basic ASCII characters. For instance, the string `"Maurício"` contains an _**i-acute**_.
 
-When assigning an string to a name, it is marked with the native encoding indicated in `l10n_info()`, except for ASCII strings which are allways marked as `"unknown"`.
+When assigning an string to a name, it is marked with the native encoding indicated in `l10n_info()`, except for ASCII strings which are always marked as `"unknown"`.
 
 ```r
 x <- "Maurício"
@@ -284,7 +286,7 @@ details(x)
 ## Internationalization Convertion Test
 From `help(iconvlist)`: On most platforms iconvlist provides an alphabetical list of the supported encodings. On others, the information is on the man page for iconv(5) or elsewhere in the man pages (but beware that the system command iconv may not support the same set of encodings as the C functions R calls). Unfortunately, the names are rarely supported across all platforms.  Value for iconvlist(), a character vector (typically of a few hundred elements) of known encoding names.
 
-Number of suposed supported encodings.
+Number of supposed supported encodings.
 
 ```r
 (encodings <- length(iconvlist()))
@@ -827,8 +829,8 @@ split(names(remarked), remarked)
 $Maurício
 [1] "UTF-8" "UTF8" 
 ```
-### safe.iconvlist()
-As one can see through the tests above, `iconvlist()` returns an unsafe list of encodings that may even `stop()` your R code.  All these tests made possible to develop the custom function `safe.iconvlist` that aims to list sucessfuly tested supported encodings from a source encoding (defaults to `from=Encoding(x)`) to all suposedly supported encodings for the current platform by avoiding runtime errors and non-convertible strings.
+## safe.iconvlist()
+As one can see through the tests above, `iconvlist()` returns an unsafe list of encodings that may even `stop()` your R code.  All these tests made possible to develop the custom function `safe.iconvlist` that aims to list successfully tested supported encodings from a source encoding (defaults to `from=Encoding(x)`) to all supposedly supported encodings for the current platform by avoiding runtime errors and non-convertible strings.
 
 ```r
 safe.iconvlist <- function(x, from = Encoding(x)) {
@@ -841,7 +843,7 @@ safe.iconvlist <- function(x, from = Encoding(x)) {
     return(names(results))
 }
 ```
-#### safe.iconvlist() test for latin1 characters strings
+### safe.iconvlist() test for latin1 characters strings
 The test strings are defined by the ISO-8859-1 codepoints: https://en.wikipedia.org/wiki/ISO/IEC_8859-1
 
 ```r
@@ -912,7 +914,7 @@ sapply(ISO88591, function(x) length(safe.iconvlist(x)))
 extended.punctuation        international            undefined 
                   81                  121                  103 
 ```
-A merged test string shows real supported encondings for the full ISO-88591 character set.
+A merged test string shows real supported encodings for the full ISO-88591 character set.
 
 ```r
 safe.iconvlist(paste0(ISO88591, collapse=""))
@@ -929,7 +931,7 @@ safe.iconvlist(paste0(ISO88591, collapse=""))
 [22] "ISO8859-1"       "L1"              "LATIN1"         
 [25] "UTF-8"           "UTF8"           
 ```
-#### safe.iconvlist() test for UTF-8 character strings
+### safe.iconvlist() test for UTF-8 character strings
 The test strings are based on Basic Multilingual Plane (BMP) which contains characters for almost all modern languages, and a large number of symbols. Most of the assigned code points in the BMP are used to encode Chinese, Japanese, and Korean (CJK) characters. https://en.wikipedia.org/wiki/UTF-8.  
 
 ```r
@@ -978,7 +980,7 @@ sapply(UTF8, function(x) length(safe.iconvlist(x)))
 onebyte.BMP.ASCII      twobytes.BMP    threebytes.BMP 
               292                 4                 4 
 ```
-A merged test string shows real supported encondings for the full UTF-8 character set.
+A merged test string shows real supported encodings for the full UTF-8 character set.
 
 ```r
 safe.iconvlist(paste0(UTF8, collapse=""))

@@ -126,7 +126,7 @@ $(document).ready(function () {
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
 <p>This document describes how to encode character strings in R by demonstrating <code>Encoding()</code>, <code>enc2native()</code>, <code>enc2utf8()</code>, <code>iconv()</code> and <code>iconvlist()</code>.</p>
-<p>Finally, it is coded and tested the custom function <a href="https://github.com/mauriciocramos/encoding/blob/master/safe.iconvlist.R"><code>safe.iconvlist()</code></a> that aims to list sucessfuly tested supported encodings from a source encoding to all suposedly supported encodings for the current platform by avoiding runtime errors and non-convertible strings.</p>
+<p>Finally, it is coded and tested the custom function <a href="https://github.com/mauriciocramos/encoding/blob/master/safe.iconvlist.R"><code>safe.iconvlist()</code></a> that aims to list successfully tested supported encodings from a source encoding to all supposedly supported encodings for the current platform by avoiding runtime errors and non-convertible strings.</p>
 </div>
 <div id="session-information" class="section level2">
 <h2>Session information</h2>
@@ -159,7 +159,7 @@ loaded via a namespace (and not attached):
 </div>
 <div id="clarification-about-getoptionencoding" class="section level2">
 <h2>Clarification about getOption(“encoding”)</h2>
-<p>This option is related to encoding connections (Files, URLs, etc) and not character vector encodings. Its factory fresh setting is <code>&quot;native.enc&quot;</code> if it was not previosly changed with <code>options(enconding)</code> or in the initialization files <code>Rprofile.site</code> and <code>.Rprofile</code>.</p>
+<p>This option is related to encoding connections (Files, URLs, etc) and not character vector encodings. Its factory fresh setting is <code>&quot;native.enc&quot;</code> if it was not previously changed with <code>options(enconding)</code> or in the initialization files <code>Rprofile.site</code> and <code>.Rprofile</code>.</p>
 <pre class="r"><code>getOption(&quot;encoding&quot;)</code></pre>
 <pre><code>[1] &quot;native.enc&quot;</code></pre>
 </div>
@@ -185,7 +185,11 @@ locales &lt;- setNames(sapply(localeCategories, Sys.getlocale), localeCategories
 </div>
 <div id="warning-about-sys.setlocalelc_ctype" class="section level2">
 <h2>Warning about Sys.setlocale(“LC_CTYPE”)</h2>
-<p>From <code>help(locales)</code>: <em>Attempts to change the character set by <code>Sys.setlocale(&quot;LC_CTYPE&quot;)</code> that implies a different character set during a session may not work and are likely to lead to some confusion because it may not affect the native encoding.</em> ## Localization information The function <code>l10n_info()</code> reports on localization returning a list with three logical and one integer components:</p>
+<p>From <code>help(locales)</code>: <em>Attempts to change the character set by <code>Sys.setlocale(&quot;LC_CTYPE&quot;)</code> that implies a different character set during a session may not work and are likely to lead to some confusion because it may not affect the native encoding.</em></p>
+</div>
+<div id="localization-information" class="section level2">
+<h2>Localization information</h2>
+<p>The function <code>l10n_info()</code> reports on localization returning a list with three logical and one integer components:</p>
 <p><code>MBCS</code>: if a multi-byte character set in use?<br />
 <code>UTF-8</code>: Is this a UTF-8 locale?<br />
 <code>Latin-1</code>: Is this a Latin-1 locale?<br />
@@ -213,13 +217,13 @@ $codepage
 </div>
 <div id="current-native-encoding-name" class="section level2">
 <h2>Current native encoding name</h2>
-<p>Character strings in R can be declared to be encoded in <code>&quot;latin1&quot;</code> or <code>&quot;UTF-8&quot;</code> or as <code>&quot;bytes&quot;</code>. A programatic approach to deal with the current native encoding name in R functions is based on how character strings can be declared and the information reported by <code>l10n_info</code>.</p>
+<p>Character strings in R can be declared to be encoded in <code>&quot;latin1&quot;</code> or <code>&quot;UTF-8&quot;</code> or as <code>&quot;bytes&quot;</code>. A programmatic approach to deal with the current native encoding name in R functions is based on how character strings can be declared and the information reported by <code>l10n_info</code>.</p>
 <pre class="r"><code>(native &lt;- ifelse(l10n_info()[[2]], &quot;UTF-8&quot;, ifelse(l10n_info()[[3]], &quot;latin1&quot;, &quot;unknown&quot;)))</code></pre>
 <pre><code>[1] &quot;latin1&quot;</code></pre>
 </div>
 <div id="current-foreign-encoding-name" class="section level2">
 <h2>Current foreign encoding name</h2>
-<p>A programatic approach to deal with a foreign encoding name in R functions is based on how character strings can be declared and the information reported by <code>l10n_info</code>.</p>
+<p>A programmatic approach to deal with a foreign encoding name in R functions is based on how character strings can be declared and the information reported by <code>l10n_info</code>.</p>
 <pre class="r"><code>(native &lt;- ifelse(l10n_info()[[2]], &quot;UTF-8&quot;, ifelse(l10n_info()[[3]], &quot;latin1&quot;, &quot;unknown&quot;)))</code></pre>
 <pre><code>[1] &quot;latin1&quot;</code></pre>
 <pre class="r"><code>(foreign &lt;- switch(native, &quot;latin1&quot;=&quot;UTF-8&quot;, &quot;UTF-8&quot;=&quot;latin1&quot;, &quot;UTF-8&quot;))</code></pre>
@@ -231,7 +235,10 @@ $codepage
 <code>Encoding()&lt;-</code> sets the encoding mark without translating the character string.<br />
 <code>enc2native()</code> and <code>enc2utf8()</code> convert elements of character vectors to the native encoding or UTF-8 respectively, taking any marked encoding into account.<br />
 <code>iconv()</code> uses system facilities to convert a character vector between encoding. The names of encodings and which ones are available are platform-dependent. All R platforms support <code>&quot;&quot;</code> (for the encoding of the current locale), <code>&quot;latin1&quot;</code> and <code>&quot;UTF-8&quot;</code>. Any encoding bits on elements of x are ignored: they will always be translated as if from encoding <code>from</code> even if declared otherwise.</p>
-<p>There are other ways for character strings to acquire a declared encodings. Some of them have an <code>encoding</code> argument that is used to declare encodings. Most character manipulation functions will set the encoding on output strings if it was declared on the corresponding input. These have changed as R has evolved and are mentioned in <code>help(Encoding)</code>. There are also external packages but are out of the scope of this document. ### Custom function to display details about a string</p>
+<p>There are other ways for character strings to acquire a declared encodings. Some of them have an <code>encoding</code> argument that is used to declare encodings. Most character manipulation functions will set the encoding on output strings if it was declared on the corresponding input. These have changed as R has evolved and are mentioned in <code>help(Encoding)</code>. There are also external packages but are out of the scope of this document.</p>
+</div>
+<div id="custom-function-to-display-details-about-a-string" class="section level2">
+<h2>Custom function to display details about a string</h2>
 <pre class="r"><code>details &lt;- function(x) {
     details &lt;-
         list(x=x,encoding=Encoding(x),bytes=nchar(x,&quot;b&quot;),chars=nchar(x,&quot;c&quot;),
@@ -243,7 +250,7 @@ $codepage
 <h2>Character vector encoding</h2>
 <p>Character strings in R can be declared to be encoded in <code>&quot;latin1&quot;</code> or <code>&quot;UTF-8&quot;</code> or as <code>&quot;bytes&quot;</code>.</p>
 <p>An encoded character string contains characters beyond the basic ASCII characters. For instance, the string <code>&quot;Maurício&quot;</code> contains an <em><strong>i-acute</strong></em>.</p>
-<p>When assigning an string to a name, it is marked with the native encoding indicated in <code>l10n_info()</code>, except for ASCII strings which are allways marked as <code>&quot;unknown&quot;</code>.</p>
+<p>When assigning an string to a name, it is marked with the native encoding indicated in <code>l10n_info()</code>, except for ASCII strings which are always marked as <code>&quot;unknown&quot;</code>.</p>
 <pre class="r"><code>x &lt;- &quot;Maurício&quot;
 c(x, Encoding(x))</code></pre>
 <pre><code>[1] &quot;Maurício&quot; &quot;latin1&quot;  </code></pre>
@@ -298,7 +305,7 @@ details(x)</code></pre>
 <div id="internationalization-convertion-test" class="section level2">
 <h2>Internationalization Convertion Test</h2>
 <p>From <code>help(iconvlist)</code>: On most platforms iconvlist provides an alphabetical list of the supported encodings. On others, the information is on the man page for iconv(5) or elsewhere in the man pages (but beware that the system command iconv may not support the same set of encodings as the C functions R calls). Unfortunately, the names are rarely supported across all platforms. Value for iconvlist(), a character vector (typically of a few hundred elements) of known encoding names.</p>
-<p>Number of suposed supported encodings.</p>
+<p>Number of supposed supported encodings.</p>
 <pre class="r"><code>(encodings &lt;- length(iconvlist()))</code></pre>
 <pre><code>[1] 374</code></pre>
 <p>Number of unique supported encodings may be differ.</p>
@@ -712,9 +719,10 @@ Maurício
 <pre><code>$Maurício
 [1] &quot;UTF-8&quot; &quot;UTF8&quot; </code></pre>
 </div>
-<div id="safe.iconvlist" class="section level3">
-<h3>safe.iconvlist()</h3>
-<p>As one can see through the tests above, <code>iconvlist()</code> returns an unsafe list of encodings that may even <code>stop()</code> your R code. All these tests made possible to develop the custom function <code>safe.iconvlist</code> that aims to list sucessfuly tested supported encodings from a source encoding (defaults to <code>from=Encoding(x)</code>) to all suposedly supported encodings for the current platform by avoiding runtime errors and non-convertible strings.</p>
+</div>
+<div id="safe.iconvlist" class="section level2">
+<h2>safe.iconvlist()</h2>
+<p>As one can see through the tests above, <code>iconvlist()</code> returns an unsafe list of encodings that may even <code>stop()</code> your R code. All these tests made possible to develop the custom function <code>safe.iconvlist</code> that aims to list successfully tested supported encodings from a source encoding (defaults to <code>from=Encoding(x)</code>) to all supposedly supported encodings for the current platform by avoiding runtime errors and non-convertible strings.</p>
 <pre class="r"><code>safe.iconvlist &lt;- function(x, from = Encoding(x)) {
     stopifnot(is.character(x))
     from &lt;- switch(from, &quot;unknown&quot; = &quot;&quot;, from)
@@ -724,8 +732,8 @@ Maurício
     results &lt;- results[(!is.na(results) &amp; !grepl(&quot;^Error in iconv&quot;, results))]
     return(names(results))
 }</code></pre>
-<div id="safe.iconvlist-test-for-latin1-characters-strings" class="section level4">
-<h4>safe.iconvlist() test for latin1 characters strings</h4>
+<div id="safe.iconvlist-test-for-latin1-characters-strings" class="section level3">
+<h3>safe.iconvlist() test for latin1 characters strings</h3>
 <p>The test strings are defined by the ISO-8859-1 codepoints: <a href="https://en.wikipedia.org/wiki/ISO/IEC_8859-1" class="uri">https://en.wikipedia.org/wiki/ISO/IEC_8859-1</a></p>
 <pre class="r"><code>ISO88591 &lt;- list(
     alphabetic = c(65:90,97:122),
@@ -763,7 +771,7 @@ extended.punctuation        international            undefined
                  312                  312                  211 
 extended.punctuation        international            undefined 
                   81                  121                  103 </code></pre>
-<p>A merged test string shows real supported encondings for the full ISO-88591 character set.</p>
+<p>A merged test string shows real supported encodings for the full ISO-88591 character set.</p>
 <pre class="r"><code>safe.iconvlist(paste0(ISO88591, collapse=&quot;&quot;))</code></pre>
 <pre><code> [1] &quot;CP65001&quot;         &quot;CSISOLATIN1&quot;     &quot;GB18030&quot;        
  [4] &quot;IBM01047&quot;        &quot;IBM037&quot;          &quot;IBM273&quot;         
@@ -775,8 +783,8 @@ extended.punctuation        international            undefined
 [22] &quot;ISO8859-1&quot;       &quot;L1&quot;              &quot;LATIN1&quot;         
 [25] &quot;UTF-8&quot;           &quot;UTF8&quot;           </code></pre>
 </div>
-<div id="safe.iconvlist-test-for-utf-8-character-strings" class="section level4">
-<h4>safe.iconvlist() test for UTF-8 character strings</h4>
+<div id="safe.iconvlist-test-for-utf-8-character-strings" class="section level3">
+<h3>safe.iconvlist() test for UTF-8 character strings</h3>
 <p>The test strings are based on Basic Multilingual Plane (BMP) which contains characters for almost all modern languages, and a large number of symbols. Most of the assigned code points in the BMP are used to encode Chinese, Japanese, and Korean (CJK) characters. <a href="https://en.wikipedia.org/wiki/UTF-8" class="uri">https://en.wikipedia.org/wiki/UTF-8</a>.</p>
 <pre class="r"><code>UTF8 &lt;- list(
     onebyte.BMP.ASCII = c(0x0000:0x007F),
@@ -798,10 +806,9 @@ sapply(UTF8, function(x) Encoding(x))</code></pre>
 <pre class="r"><code>sapply(UTF8, function(x) length(safe.iconvlist(x)))</code></pre>
 <pre><code>onebyte.BMP.ASCII      twobytes.BMP    threebytes.BMP 
               292                 4                 4 </code></pre>
-<p>A merged test string shows real supported encondings for the full UTF-8 character set.</p>
+<p>A merged test string shows real supported encodings for the full UTF-8 character set.</p>
 <pre class="r"><code>safe.iconvlist(paste0(UTF8, collapse=&quot;&quot;))</code></pre>
 <pre><code>[1] &quot;CP65001&quot; &quot;GB18030&quot; &quot;UTF-8&quot;   &quot;UTF8&quot;   </code></pre>
-</div>
 </div>
 </div>
 
