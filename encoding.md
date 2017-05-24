@@ -2,8 +2,6 @@
 Maurício Collaça  
 2017/05/23  
 
-
-
 ## Introduction
 This document describes how to encode character strings in R by demonstrating `Encoding()`, `enc2native()`, `enc2utf8()`, `iconv()` and `iconvlist()`.
 
